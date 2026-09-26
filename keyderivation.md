@@ -1891,3 +1891,104 @@ Header:
     Level=warning(1), description=close notify(0)
 ```    
 
+```sh
+# extract only — output length must equal the digest size
+openssl kdf -keylen 32 -kdfopt mode:EXTRACT_ONLY -kdfopt digest:SHA256 \
+  -kdfopt hexkey:0102 -kdfopt hexsalt:AABB HKDF
+
+# expand only — no salt accepted; key IS the PRK
+openssl kdf -keylen 64 -kdfopt mode:EXPAND_ONLY -kdfopt digest:SHA256 \
+  -kdfopt hexkey:<prk> -kdfopt hexinfo:6D79617070 HKDF
+```
+
+HMAC always has two arguments: the first is a key and the second an input (or message).  (Note that in the extract step, 'IKM' is used as the HMAC input, not as the HMAC key.)
+
+When the message is composed of several elements we use concatenation (denoted |) in the second argument; for example, HMAC(K, elem1 |elem2 | elem3)
+
+RFC 5869 §2.2, Step 1: Extract
+
+```
+HKDF-Extract(salt, IKM) -> PRK
+
+Options:
+   Hash     a hash function; HashLen denotes the length of the
+            hash function output in octets
+
+Inputs:
+   salt     optional salt value (a non-secret random value);
+            if not provided, it is set to a string of HashLen zeros.
+   IKM      input keying material
+
+Output:
+   PRK      a pseudorandom key (of HashLen octets)
+
+The output PRK is calculated as follows:
+
+PRK = HMAC-Hash(salt, IKM)
+```
+
+RFC 5869 §2.3, Step 2: Expand
+
+```
+HKDF-Expand(PRK, info, L) -> OKM
+
+Options:
+   Hash     a hash function; HashLen denotes the length of the
+            hash function output in octets
+
+Inputs:
+   PRK      a pseudorandom key of at least HashLen octets
+            (usually, the output from the extract step)
+   info     optional context and application specific information
+            (can be a zero-length string)
+   L        length of output keying material in octets
+            (<= 255*HashLen)
+
+Output:
+   OKM      output keying material (of L octets)
+
+The output OKM is calculated as follows:
+
+N = ceil(L/HashLen)
+T = T(1) | T(2) | T(3) | ... | T(N)
+OKM = first L octets of T
+
+where:
+T(0) = empty string (zero length)
+T(1) = HMAC-Hash(PRK, T(0) | info | 0x01)
+T(2) = HMAC-Hash(PRK, T(1) | info | 0x02)
+T(3) = HMAC-Hash(PRK, T(2) | info | 0x03)
+...
+
+(where the constant concatenated to the end of each T(n) is a
+single octet.)
+```
+
+RFC 5869 §3.1, To Salt or not to Salt
+
+> HKDF is defined to operate with and without random salt. This is done to accommodate applications where a salt value is not available. We stress, however, that the use of salt adds significantly to the strength of HKDF, ensuring independence between different uses of the hash function, supporting "source-independent" extraction, and strengthening the analytical results that back the HKDF design.
+>
+> Random salt differs fundamentally from the initial keying material in two ways: it is non-secret and can be re-used. As such, salt values are available to many applications. For example, a pseudorandom number generator (PRNG) that continuously produces outputs by applying HKDF to renewable pools of entropy (e.g., sampled system events) can fix a salt value and use it for multiple applications of HKDF without having to protect the secrecy of the salt. In a different application domain, a key agreement protocol deriving cryptographic keys from a Diffie-Hellman exchange can derive a salt value from public nonces exchanged and authenticated between communicating parties as part of the key agreement (this is the approach taken in [IKEv2]).
+>
+> Ideally, the salt value is a random (or pseudorandom) string of the length HashLen. Yet, even a salt value of less quality (shorter in size or with limited entropy) may still make a significant contribution to the security of the output keying material; designers of applications are therefore encouraged to provide salt values to HKDF if such values can be obtained by the application.
+>
+> It is worth noting that, while not the typical case, some applications may even have a secret salt value available for use; in such a case, HKDF provides an even stronger security guarantee. An example of such application is IKEv1 in its "public-key encryption mode", where the "salt" to the extractor is computed from nonces that are secret; similarly, the pre-shared mode of IKEv1 uses a secret salt derived from the pre-shared key.
+
+RFC 5869 §3.2, The 'info' Input to HKDF
+
+> While the 'info' value is optional in the definition of HKDF, it is often of great importance in applications. Its main objective is to bind the derived key material to application- and context-specific information. For example, 'info' may contain a protocol number, algorithm identifiers, user identities, etc. In particular, it may prevent the derivation of the same keying material for different contexts (when the same input key material (IKM) is used in such different contexts). It may also accommodate additional inputs to the key expansion part, if so desired (e.g., an application may want to bind the key material to its length L, thus making L part of the 'info' field). There is one technical requirement from 'info': it should be independent of the input key material value IKM.
+
+RFC 5869 §3.3, To Skip or not to Skip
+
+> In some applications, the input key material IKM may already be present as a cryptographically strong key (for example, the premaster secret in TLS RSA cipher suites would be a pseudorandom string, except for the first two octets). In this case, one can skip the extract part and use IKM directly to key HMAC in the expand step. On the other hand, applications may still use the extract part for the sake of compatibility with the general case. In particular, if IKM is random (or pseudorandom) but longer than an HMAC key, the extract step can serve to output a suitable HMAC key (in the case of HMAC this shortening via the extractor is not strictly necessary since HMAC is defined to work with long keys too). Note, however, that if the IKM is a Diffie-Hellman value, as in the case of TLS with Diffie-Hellman, then the extract part SHOULD NOT be skipped. Doing so would result in using the Diffie-Hellman value g^{xy} itself (which is NOT a uniformly random or pseudorandom string) as the key PRK for HMAC. Instead, HKDF should apply the extract step to g^{xy} (preferably with a salt value) and use the resultant PRK as a key to HMAC in the expansion part.
+>
+> In the case where the amount of required key bits, L, is no more than HashLen, one could use PRK directly as the OKM. This, however, is NOT RECOMMENDED, especially because it would omit the use of 'info' as part of the derivation process (and adding 'info' as an input to the extract step is not advisable -- see [HKDF-paper]).
+
+RFC 5869 §4, Applications of HKDF
+
+> HKDF is intended for use in a wide variety of KDF applications. These include the building of pseudorandom generators from imperfect sources of randomness (such as a physical random number generator (RNG)); the generation of pseudorandomness out of weak sources of randomness, such as entropy collected from system events, user's keystrokes, etc.; the derivation of cryptographic keys from a shared Diffie-Hellman value in a key-agreement protocol; derivation of symmetric keys from a hybrid public-key encryption scheme; key derivation for key-wrapping mechanisms; and more. All of these applications can benefit from the simplicity and multi-purpose nature of HKDF, as well as from its analytical foundation.
+>
+> On the other hand, it is anticipated that some applications will not be able to use HKDF "as-is" due to specific operational requirements, or will be able to use it but without the full benefits of the scheme. One significant example is the derivation of cryptographic keys from a source of low entropy, such as a user's password. The extract step in HKDF can concentrate existing entropy but cannot amplify entropy. In the case of password-based KDFs, a main goal is to slow down dictionary attacks using two ingredients: a salt value, and the intentional slowing of the key derivation computation. HKDF naturally accommodates the use of salt; however, a slowing down mechanism is not part of this specification. Applications interested in a password-based KDF should consider whether, for example, [PKCS5] meets their needs better than HKDF.
+
+
+[RFC 5869: HMAC-based Extract-and-Expand Key Derivation Function (HKDF)](https://www.rfc-editor.org/info/rfc5869/)

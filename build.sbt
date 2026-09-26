@@ -1,6 +1,6 @@
 import Dependencies._
 
-ThisBuild / scalaVersion := "3.3.8"
+ThisBuild / scalaVersion := "3.9.0"
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
 ThisBuild / crossScalaVersions := Seq("3.3.8", "3.9.0")
@@ -40,4 +40,4 @@ libraryDependencies ++= Seq(
 )
 
 // Source: https://mvnrepository.com/artifact/software.amazon.awssdk/kms
-libraryDependencies += "software.amazon.awssdk" % "kms" % "2.55.0"
+libraryDependencies += "software.amazon.awssdk" % "kms" % "2.55.3"

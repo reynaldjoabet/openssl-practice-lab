@@ -91,10 +91,12 @@ import java.security.spec.AlgorithmParameterSpec
 
 import org.conscrypt.ConcatenationKdfSpec
 
-object Hello extends Greeting with App {
-  println(greeting)
-
+object Hello extends Greeting {
   val x = javax.crypto.KDF.getInstance("HKDF-SHA256")
+
+  def main(args: Array[String]): Unit = {
+    println(greeting)
+  }
 }
 
 trait Greeting {

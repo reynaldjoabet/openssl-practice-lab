@@ -1,6 +1,6 @@
 import Dependencies._
 
-ThisBuild / scalaVersion := "3.3.8"
+ThisBuild / scalaVersion := "3.9.0"
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
 ThisBuild / crossScalaVersions := Seq("3.3.8", "3.9.0")
@@ -13,14 +13,12 @@ ThisBuild / scalacOptions := Seq(
   "-feature",
   "-unchecked",
   // "-Werror",
-  "-java-output-version:25",
+  // "-Wunused:all",
   "-Wvalue-discard",
+  "-Wnonunit-statement",
   "-language:strictEquality",
-  // "-Wnonunit-statement",
   "-Xcheck-macros",
-  "-Xmax-inlines:64",
-  "-Yfuture-lazy-vals",
-  "-Ysafe-init"
+  "-Xmax-inlines:64"
 )
 
 lazy val root = (project in file("."))

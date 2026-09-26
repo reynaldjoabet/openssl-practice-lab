@@ -1,5 +1,3 @@
-package example
-
 import jdk.security
 import javax.crypto.AEADBadTagException
 import javax.crypto.BadPaddingException

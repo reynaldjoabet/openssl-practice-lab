@@ -1,5 +1,3 @@
-package example
-
 final case class TcpSegment(sequence: Long, payload: String)
 
 final case class TcpState(

@@ -1,5 +1,3 @@
-package example
-
 class TcpMechanismSpec extends munit.FunSuite {
   test("orders out-of-order segments by sequence number") {
     val receiver = new TcpReceiver(initialRcvNxt = 100)

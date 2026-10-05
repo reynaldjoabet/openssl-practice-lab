@@ -28,7 +28,7 @@ lazy val root = (project in file("."))
   )
 
 // Source: https://mvnrepository.com/artifact/org.pac4j/pac4j-oidc
-libraryDependencies += "org.pac4j" % "pac4j-oidc" % "6.5.8" % "runtime"
+libraryDependencies += "org.pac4j" % "pac4j-oidc" % "6.5.9" % "runtime"
 
 // Source: https://mvnrepository.com/artifact/org.pac4j/pac4j-saml
 // libraryDependencies += "org.pac4j" % "pac4j-saml" % "6.5.8" % "runtime"
@@ -38,4 +38,4 @@ libraryDependencies ++= Seq(
 )
 
 // Source: https://mvnrepository.com/artifact/software.amazon.awssdk/kms
-libraryDependencies += "software.amazon.awssdk" % "kms" % "2.55.5"
+libraryDependencies += "software.amazon.awssdk" % "kms" % "2.55.10"

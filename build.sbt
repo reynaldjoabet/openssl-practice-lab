@@ -38,4 +38,4 @@ libraryDependencies ++= Seq(
 )
 
 // Source: https://mvnrepository.com/artifact/software.amazon.awssdk/kms
-libraryDependencies += "software.amazon.awssdk" % "kms" % "2.55.15"
+libraryDependencies += "software.amazon.awssdk" % "kms" % "2.56.0"
